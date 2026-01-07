@@ -1,5 +1,5 @@
 import { Device } from '../App'
-import { HiDeviceMobile, HiStatusOnline, HiStatusOffline, HiExclamation, HiWifi, HiTrash } from 'react-icons/hi'
+import { HiDeviceMobile, HiWifi, HiTrash } from 'react-icons/hi'
 
 interface DeviceCardProps {
     device: Device
@@ -18,18 +18,7 @@ function DeviceCard({
     onConnectWifi,
     onDisconnect
 }: DeviceCardProps) {
-    const getStatusIcon = () => {
-        switch (device.status) {
-            case 'online':
-                return <HiStatusOnline className="text-success" />
-            case 'offline':
-                return <HiStatusOffline className="text-danger" />
-            case 'unauthorized':
-                return <HiExclamation className="text-warning" />
-            default:
-                return null
-        }
-    }
+
 
     const getStatusBadge = () => {
         switch (device.status) {

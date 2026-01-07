@@ -26,7 +26,7 @@ interface SettingsProps {
 function Settings({
     options,
     setOptions,
-    selectedPreset,
+
     setSelectedPreset,
     scrcpyPath,
     isConfigured,
@@ -111,10 +111,9 @@ function Settings({
         setTimeout(() => setFolderMessage(null), 5000)
     }
 
-    const codecOptions = [
-        { value: 'h264', label: 'H.264 (AVC)' },
-        { value: 'h265', label: 'H.265 (HEVC)' }
-    ]
+
+
+
 
     const audioCodecOptions = [
         { value: 'opus', label: 'Opus (Recommended)' },

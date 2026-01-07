@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Device, ScrcpyOptions } from '../App'
 import PresetSelector from '../components/PresetSelector'
 import StartButton from '../components/StartButton'
@@ -6,7 +6,6 @@ import CustomSelect from '../components/CustomSelect'
 import {
     HiDeviceMobile,
     HiStatusOnline,
-    HiPlay,
     HiInformationCircle,
     HiDownload,
     HiFolderOpen,
