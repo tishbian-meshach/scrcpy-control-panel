@@ -1,8 +1,8 @@
-# Scrcpy Control Center 📱
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/5d55c72a-ea82-4121-96c3-a89183dc453d" /># Scrcpy Control Center 📱
 
 A modern, professional, and high-performance GUI wrapper for **scrcpy**. Effortlessly control and mirror your Android devices from Windows with a sleek dark-themed interface.
 
-![Scrcpy Control Center Screenshot](https://via.placeholder.com/800x450.png?text=Scrcpy+Control+Center+Hero+UI) *(Replace with actual screenshot)*
+
 
 ## ✨ Features
 
