@@ -1,4 +1,11 @@
-<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/5d55c72a-ea82-4121-96c3-a89183dc453d" /># Scrcpy Control Center 📱
+#Scrcpy Control Center 📱
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/a22105a1-f453-485b-ac68-4d2a399716c5" />
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/695f73e4-239e-4473-b21b-578d76f1209d" />
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/5d55c72a-ea82-4121-96c3-a89183dc453d" />
+
+
+
+
 
 A modern, professional, and high-performance GUI wrapper for **scrcpy**. Effortlessly control and mirror your Android devices from Windows with a sleek dark-themed interface.
 
