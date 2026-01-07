@@ -102,6 +102,12 @@ app.whenReady().then(() => {
         return { specs, suggested }
     })
 
+    // IPC Handler - Automated Setup
+    ipcMain.handle('download-scrcpy', async (): Promise<{ success: boolean; message: string; path?: string }> => {
+        const { downloadAndSetupScrcpy } = await import('./downloader')
+        return await downloadAndSetupScrcpy()
+    })
+
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) {
             createWindow()

@@ -230,6 +230,16 @@ function App() {
         return result
     }
 
+    const handleDownloadScrcpy = async () => {
+        const result = await window.electronAPI.downloadScrcpy()
+        if (result.success && result.path) {
+            setScrcpyPath(result.path)
+            setIsConfigured(true)
+            fetchDevices()
+        }
+        return result
+    }
+
     const applyPreset = (presetName: string) => {
         setSelectedPreset(presetName)
 
@@ -309,6 +319,7 @@ function App() {
                 handleStart={handleStart}
                 handleStop={handleStop}
                 handleSelectFolder={handleSelectFolder}
+                handleDownloadScrcpy={handleDownloadScrcpy}
                 applyPreset={applyPreset}
                 fetchDevices={fetchDevices}
             />
@@ -333,6 +344,7 @@ interface AppContentProps {
     handleStart: () => Promise<void>
     handleStop: () => Promise<void>
     handleSelectFolder: () => Promise<{ success: boolean; path: string | null; message: string }>
+    handleDownloadScrcpy: () => Promise<{ success: boolean; message: string; path?: string }>
     applyPreset: (preset: string) => void
     fetchDevices: () => void
 }
@@ -354,6 +366,7 @@ function AppContent({
     handleStart,
     handleStop,
     handleSelectFolder,
+    handleDownloadScrcpy,
     applyPreset,
     fetchDevices
 }: AppContentProps) {
@@ -477,6 +490,7 @@ function AppContent({
                                 onStop={handleStop}
                                 onApplyPreset={applyPreset}
                                 onSelectFolder={handleSelectFolder}
+                                onDownloadScrcpy={handleDownloadScrcpy}
                             />
                         }
                     />

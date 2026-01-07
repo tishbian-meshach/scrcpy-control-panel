@@ -50,6 +50,7 @@ interface Window {
                 audioBitrate: number
             } | null
         }>
+        downloadScrcpy: () => Promise<{ success: boolean; message: string; path?: string }>
         onRefreshDevices: (callback: () => void) => void
     }
 }

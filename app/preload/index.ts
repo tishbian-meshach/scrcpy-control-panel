@@ -91,6 +91,9 @@ const electronAPI = {
         } | null
     }> => ipcRenderer.invoke('get-device-specs', deviceId),
 
+    downloadScrcpy: (): Promise<{ success: boolean; message: string; path?: string }> =>
+        ipcRenderer.invoke('download-scrcpy'),
+
     // Event listeners
     onRefreshDevices: (callback: () => void) => {
         ipcRenderer.on('refresh-devices', () => callback())

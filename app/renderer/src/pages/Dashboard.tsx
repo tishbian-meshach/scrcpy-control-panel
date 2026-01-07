@@ -1,8 +1,17 @@
+import React, { useState } from 'react'
 import { Device, ScrcpyOptions } from '../App'
 import PresetSelector from '../components/PresetSelector'
 import StartButton from '../components/StartButton'
 import CustomSelect from '../components/CustomSelect'
-import { HiDeviceMobile, HiStatusOnline, HiPlay, HiInformationCircle } from 'react-icons/hi'
+import {
+    HiDeviceMobile,
+    HiStatusOnline,
+    HiPlay,
+    HiInformationCircle,
+    HiDownload,
+    HiFolderOpen,
+    HiRefresh
+} from 'react-icons/hi'
 
 interface DashboardProps {
     devices: Device[]
@@ -17,6 +26,7 @@ interface DashboardProps {
     onStop: () => void
     onApplyPreset: (preset: string) => void
     onSelectFolder: () => Promise<{ success: boolean; path: string | null; message: string }>
+    onDownloadScrcpy: () => Promise<{ success: boolean; message: string; path?: string }>
 }
 
 function Dashboard({
@@ -31,8 +41,12 @@ function Dashboard({
     onStart,
     onStop,
     onApplyPreset,
-    onSelectFolder
+    onSelectFolder,
+    onDownloadScrcpy
 }: DashboardProps) {
+    const [isDownloading, setIsDownloading] = useState(false)
+    const [setupError, setSetupError] = useState<string | null>(null)
+
     const onlineDevices = devices.filter(d => d.status === 'online')
 
     // Generate command string for preview
@@ -83,26 +97,82 @@ function Dashboard({
         label: `${d.model || d.id} (${d.type.toUpperCase()})`
     }))
 
+    const handleDownload = async () => {
+        setIsDownloading(true)
+        setSetupError(null)
+        try {
+            const result = await onDownloadScrcpy()
+            if (!result.success) {
+                setSetupError(result.message)
+            }
+        } catch (err: any) {
+            setSetupError(err.message || 'Download failed')
+        } finally {
+            setIsDownloading(false)
+        }
+    }
+
     if (!isConfigured) {
         return (
             <div className="page">
                 <div className="page__header">
                     <h1 className="page__title">Setup Required</h1>
-                    <p className="page__subtitle">Select your scrcpy folder to get started</p>
+                    <p className="page__subtitle">Welcome! How would you like to configure scrcpy?</p>
                 </div>
 
-                <div className="card text-center" style={{ maxWidth: '440px', margin: '40px auto' }}>
-                    <div style={{ fontSize: '48px', marginBottom: 'var(--space-md)', color: 'var(--text-tertiary)' }}>
-                        <HiDeviceMobile style={{ margin: '0 auto' }} />
+                <div className="dashboard-grid mt-xl" style={{ maxWidth: '900px', margin: '40px auto' }}>
+                    <div className="card text-center" style={{ padding: 'var(--space-xl)' }}>
+                        <div style={{ fontSize: '48px', marginBottom: 'var(--space-md)', color: 'var(--accent-primary)' }}>
+                            <HiDownload style={{ margin: '0 auto' }} />
+                        </div>
+                        <h2 style={{ marginBottom: 'var(--space-sm)' }}>Automatic Setup</h2>
+                        <p style={{ color: 'var(--text-secondary)', marginBottom: 'var(--space-xl)', minHeight: '40px' }}>
+                            We'll download and configure the latest version of scrcpy for you automatically.
+                        </p>
+                        <button
+                            className={`btn btn--primary btn--lg ${isDownloading ? 'btn--loading' : ''}`}
+                            style={{ width: '100%', gap: '8px' }}
+                            onClick={handleDownload}
+                            disabled={isDownloading}
+                        >
+                            {isDownloading ? (
+                                <>
+                                    <HiRefresh className="animate-spin" /> Downloading...
+                                </>
+                            ) : (
+                                <>
+                                    <HiDownload /> Download & Install
+                                </>
+                            )}
+                        </button>
                     </div>
-                    <h2 style={{ marginBottom: 'var(--space-md)' }}>Configure Scrcpy</h2>
-                    <p style={{ color: 'var(--text-secondary)', marginBottom: 'var(--space-xl)' }}>
-                        We need to know where scrcpy is located on your computer to continue.
-                    </p>
-                    <button className="btn btn--primary btn--lg" onClick={onSelectFolder}>
-                        Select Scrcpy Folder
-                    </button>
+
+                    <div className="card text-center" style={{ padding: 'var(--space-xl)' }}>
+                        <div style={{ fontSize: '48px', marginBottom: 'var(--space-md)', color: 'var(--text-tertiary)' }}>
+                            <HiFolderOpen style={{ margin: '0 auto' }} />
+                        </div>
+                        <h2 style={{ marginBottom: 'var(--space-sm)' }}>Manual Setup</h2>
+                        <p style={{ color: 'var(--text-secondary)', marginBottom: 'var(--space-xl)', minHeight: '40px' }}>
+                            Already have scrcpy? Select the folder containing scrcpy.exe to use your existing installation.
+                        </p>
+                        <button
+                            className="btn btn--secondary btn--lg"
+                            style={{ width: '100%', gap: '8px' }}
+                            onClick={onSelectFolder}
+                            disabled={isDownloading}
+                        >
+                            <HiFolderOpen /> Select Folder
+                        </button>
+                    </div>
                 </div>
+
+                {setupError && (
+                    <div className="card mt-lg" style={{ maxWidth: '440px', margin: '0 auto', border: '1px solid var(--accent-danger)', background: 'rgba(239, 68, 68, 0.05)' }}>
+                        <p style={{ color: 'var(--accent-danger)', textAlign: 'center' }}>
+                            <strong>Setup Failed:</strong> {setupError}
+                        </p>
+                    </div>
+                )}
             </div>
         )
     }

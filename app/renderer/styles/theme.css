@@ -990,9 +990,17 @@ body {
     gap: var(--space-lg);
 }
 
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-lg);
+}
+
 /* ===== Responsive Media Queries ===== */
 @media (max-width: 900px) {
-    .settings-2col {
+
+    .settings-2col,
+    .dashboard-grid {
         grid-template-columns: 1fr;
     }
 
