@@ -51,6 +51,15 @@ interface Window {
             } | null
         }>
         downloadScrcpy: () => Promise<{ success: boolean; message: string; path?: string }>
+
+        // Auto-connect
+        getAutoConnectEnabled: () => Promise<boolean>
+        setAutoConnectEnabled: (enabled: boolean) => Promise<void>
+        getAutoConnectOptions: () => Promise<any | null>
+        setAutoConnectOptions: (options: any) => Promise<void>
+
+        // Event listeners
         onRefreshDevices: (callback: () => void) => void
+        onAutoConnectTriggered: (callback: (data: { device: any; success: boolean; message: string }) => void) => void
     }
 }
