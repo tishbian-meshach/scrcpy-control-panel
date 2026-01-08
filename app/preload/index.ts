@@ -94,9 +94,22 @@ const electronAPI = {
     downloadScrcpy: (): Promise<{ success: boolean; message: string; path?: string }> =>
         ipcRenderer.invoke('download-scrcpy'),
 
+    // Auto-connect
+    getAutoConnectEnabled: (): Promise<boolean> =>
+        ipcRenderer.invoke('get-auto-connect-enabled'),
+    setAutoConnectEnabled: (enabled: boolean): Promise<void> =>
+        ipcRenderer.invoke('set-auto-connect-enabled', enabled),
+    getAutoConnectOptions: (): Promise<ScrcpyOptions | null> =>
+        ipcRenderer.invoke('get-auto-connect-options'),
+    setAutoConnectOptions: (options: ScrcpyOptions): Promise<void> =>
+        ipcRenderer.invoke('set-auto-connect-options', options),
+
     // Event listeners
     onRefreshDevices: (callback: () => void) => {
         ipcRenderer.on('refresh-devices', () => callback())
+    },
+    onAutoConnectTriggered: (callback: (data: { device: Device; success: boolean; message: string }) => void) => {
+        ipcRenderer.on('auto-connect-triggered', (_event, data) => callback(data))
     }
 }
 

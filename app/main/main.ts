@@ -3,8 +3,9 @@ import path from 'path'
 import { createTray, destroyTray } from './tray'
 import { createWindow, getMainWindow, showWindow, hideWindow, setWindowMode } from './window'
 import { getDevices, connectWifi, disconnectDevice, getDeviceSpecs, suggestQualitySettings, Device, DeviceSpecs, SuggestedSettings } from './adb'
-import { startScrcpy, stopScrcpy, getScrcpyStatus, ScrcpyOptions } from './scrcpy'
-import { loadConfig, selectScrcpyFolder, getScrcpyPath, isConfigured } from './config'
+import { startScrcpy, stopScrcpy, getScrcpyStatus, ScrcpyOptions, DEFAULT_OPTIONS } from './scrcpy'
+import { loadConfig, selectScrcpyFolder, getScrcpyPath, isConfigured, getAutoConnectEnabled, setAutoConnectEnabled, getAutoConnectOptions, setAutoConnectOptions } from './config'
+import { getDeviceMonitor } from './device-monitor'
 
 const isDev = !app.isPackaged
 
@@ -14,6 +15,42 @@ app.whenReady().then(() => {
 
     createWindow()
     createTray()
+
+    // Start device monitor
+    const monitor = getDeviceMonitor()
+    monitor.start()
+
+    // Listen for new device connections
+    monitor.on('device-connected', async (device: Device) => {
+        console.log('Device connected:', device)
+
+        // Check if auto-connect is enabled
+        if (getAutoConnectEnabled() && isConfigured()) {
+            console.log('Auto-connect is enabled, launching scrcpy...')
+
+            // Get saved options or use defaults
+            const options = getAutoConnectOptions() || DEFAULT_OPTIONS
+
+            // Start scrcpy
+            const result = await startScrcpy(device.id, options)
+
+            // Notify renderer
+            const win = getMainWindow()
+            if (win) {
+                win.webContents.send('auto-connect-triggered', {
+                    device,
+                    success: result.success,
+                    message: result.message
+                })
+            }
+
+            if (result.success) {
+                console.log('Auto-connect successful:', result.message)
+            } else {
+                console.error('Auto-connect failed:', result.message)
+            }
+        }
+    })
 
     // IPC Handlers - Device Management
     ipcMain.handle('get-devices', async (): Promise<Device[]> => {
@@ -108,6 +145,23 @@ app.whenReady().then(() => {
         return await downloadAndSetupScrcpy()
     })
 
+    // IPC Handlers - Auto-Connect
+    ipcMain.handle('get-auto-connect-enabled', (): boolean => {
+        return getAutoConnectEnabled()
+    })
+
+    ipcMain.handle('set-auto-connect-enabled', (_, enabled: boolean): void => {
+        setAutoConnectEnabled(enabled)
+    })
+
+    ipcMain.handle('get-auto-connect-options', (): ScrcpyOptions | null => {
+        return getAutoConnectOptions()
+    })
+
+    ipcMain.handle('set-auto-connect-options', (_, options: ScrcpyOptions): void => {
+        setAutoConnectOptions(options)
+    })
+
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) {
             createWindow()
@@ -123,6 +177,10 @@ app.on('window-all-closed', () => {
 })
 
 app.on('before-quit', () => {
+    // Stop device monitor
+    const monitor = getDeviceMonitor()
+    monitor.stop()
+
     stopScrcpy()
     destroyTray()
 })

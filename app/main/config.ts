@@ -1,17 +1,22 @@
 import { app, dialog } from 'electron'
 import path from 'path'
 import fs from 'fs'
+import { ScrcpyOptions } from './scrcpy'
 
 interface AppConfig {
     scrcpyPath: string | null
     lastDevice: string | null
     windowMode: 'normal' | 'hidden' | 'tray-only'
+    autoConnectEnabled: boolean
+    autoConnectOptions: ScrcpyOptions | null
 }
 
 const DEFAULT_CONFIG: AppConfig = {
     scrcpyPath: null,
     lastDevice: null,
-    windowMode: 'normal'
+    windowMode: 'normal',
+    autoConnectEnabled: false,
+    autoConnectOptions: null
 }
 
 let config: AppConfig = { ...DEFAULT_CONFIG }
@@ -142,4 +147,22 @@ export function getScrcpyExePath(): string | null {
 
 export function isConfigured(): boolean {
     return config.scrcpyPath !== null && getScrcpyExePath() !== null
+}
+
+export function setAutoConnectEnabled(enabled: boolean): void {
+    config.autoConnectEnabled = enabled
+    saveConfig()
+}
+
+export function getAutoConnectEnabled(): boolean {
+    return config.autoConnectEnabled
+}
+
+export function setAutoConnectOptions(options: ScrcpyOptions | null): void {
+    config.autoConnectOptions = options
+    saveConfig()
+}
+
+export function getAutoConnectOptions(): ScrcpyOptions | null {
+    return config.autoConnectOptions
 }

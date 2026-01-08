@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ScrcpyOptions, Device } from '../App'
 import OptionToggle from '../components/OptionToggle'
 import CustomSelect from '../components/CustomSelect'
@@ -9,7 +9,8 @@ import {
     HiCursorClick,
     HiFolderOpen,
     HiLightningBolt,
-    HiRefresh
+    HiRefresh,
+    HiLink
 } from 'react-icons/hi'
 
 interface SettingsProps {
@@ -35,6 +36,8 @@ function Settings({
 }: SettingsProps) {
     const [folderMessage, setFolderMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
     const [optimizing, setOptimizing] = useState(false)
+    const [autoConnectEnabled, setAutoConnectEnabledState] = useState(false)
+    const [autoConnectMessage, setAutoConnectMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
     const updateOption = <K extends keyof ScrcpyOptions>(key: K, value: ScrcpyOptions[K]) => {
         setOptions(prev => ({ ...prev, [key]: value }))
@@ -111,6 +114,34 @@ function Settings({
         setTimeout(() => setFolderMessage(null), 5000)
     }
 
+    // Load auto-connect status on mount
+    useEffect(() => {
+        const loadAutoConnectStatus = async () => {
+            const enabled = await window.electronAPI.getAutoConnectEnabled()
+            setAutoConnectEnabledState(enabled)
+        }
+        loadAutoConnectStatus()
+    }, [])
+
+    const handleAutoConnectToggle = async (enabled: boolean) => {
+        await window.electronAPI.setAutoConnectEnabled(enabled)
+        setAutoConnectEnabledState(enabled)
+        setAutoConnectMessage({
+            type: 'success',
+            text: enabled ? 'Auto-connect enabled' : 'Auto-connect disabled'
+        })
+        setTimeout(() => setAutoConnectMessage(null), 3000)
+    }
+
+    const handleSaveAutoConnectOptions = async () => {
+        await window.electronAPI.setAutoConnectOptions(options)
+        setAutoConnectMessage({
+            type: 'success',
+            text: 'Current settings saved for auto-connect'
+        })
+        setTimeout(() => setAutoConnectMessage(null), 3000)
+    }
+
 
 
 
@@ -178,6 +209,52 @@ function Settings({
                     </div>
                 </div>
             </div>
+
+            {/* Auto-Connect Section */}
+            <div className="settings-section">
+                <div className="settings-section__title">
+                    <HiLink className="settings-section__icon" /> Auto-Connect
+                </div>
+                <div className="settings-grid">
+                    <OptionToggle
+                        label="Auto-Connect on USB Detection"
+                        description="Automatically start scrcpy when USB device is plugged in"
+                        enabled={autoConnectEnabled}
+                        onChange={handleAutoConnectToggle}
+                    />
+
+                    {autoConnectEnabled && (
+                        <div className="card">
+                            <div style={{ marginBottom: '12px' }}>
+                                <div style={{ fontWeight: 600, fontSize: '13px' }}>Default Settings</div>
+                                <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                                    Save your current settings to use for auto-connect
+                                </div>
+                            </div>
+                            <button
+                                className="btn btn--secondary btn--md"
+                                style={{ width: '100%' }}
+                                onClick={handleSaveAutoConnectOptions}
+                                disabled={!isConfigured}
+                            >
+                                Save Current Settings
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {autoConnectMessage && (
+                <div className={`card mb-lg`} style={{
+                    background: autoConnectMessage.type === 'success' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                    borderColor: autoConnectMessage.type === 'success' ? 'var(--accent-success)' : 'var(--accent-danger)',
+                    padding: '12px'
+                }}>
+                    <div style={{ color: autoConnectMessage.type === 'success' ? 'var(--accent-success)' : 'var(--accent-danger)', fontSize: '13px' }}>
+                        {autoConnectMessage.text}
+                    </div>
+                </div>
+            )}
 
             {folderMessage && (
                 <div className={`card mb-lg`} style={{
