@@ -9,6 +9,8 @@ interface AppConfig {
     windowMode: 'normal' | 'hidden' | 'tray-only'
     autoConnectEnabled: boolean
     autoConnectOptions: ScrcpyOptions | null
+    autoStartEnabled: boolean
+    autoReconnectEnabled: boolean
 }
 
 const DEFAULT_CONFIG: AppConfig = {
@@ -16,7 +18,9 @@ const DEFAULT_CONFIG: AppConfig = {
     lastDevice: null,
     windowMode: 'normal',
     autoConnectEnabled: false,
-    autoConnectOptions: null
+    autoConnectOptions: null,
+    autoStartEnabled: false,
+    autoReconnectEnabled: true
 }
 
 let config: AppConfig = { ...DEFAULT_CONFIG }
@@ -165,4 +169,30 @@ export function setAutoConnectOptions(options: ScrcpyOptions | null): void {
 
 export function getAutoConnectOptions(): ScrcpyOptions | null {
     return config.autoConnectOptions
+}
+
+export function setAutoStartEnabled(enabled: boolean): void {
+    config.autoStartEnabled = enabled
+    saveConfig()
+
+    // Configure Windows startup behavior
+    app.setLoginItemSettings({
+        openAtLogin: enabled,
+        openAsHidden: enabled, // Start hidden in tray when auto-starting
+        path: process.execPath,
+        args: []
+    })
+}
+
+export function getAutoStartEnabled(): boolean {
+    return config.autoStartEnabled
+}
+
+export function setAutoReconnectEnabled(enabled: boolean): void {
+    config.autoReconnectEnabled = enabled
+    saveConfig()
+}
+
+export function getAutoReconnectEnabled(): boolean {
+    return config.autoReconnectEnabled
 }

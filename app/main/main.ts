@@ -3,8 +3,8 @@ import path from 'path'
 import { createTray, destroyTray } from './tray'
 import { createWindow, getMainWindow, showWindow, hideWindow, setWindowMode } from './window'
 import { getDevices, connectWifi, disconnectDevice, getDeviceSpecs, suggestQualitySettings, Device, DeviceSpecs, SuggestedSettings } from './adb'
-import { startScrcpy, stopScrcpy, getScrcpyStatus, ScrcpyOptions, DEFAULT_OPTIONS } from './scrcpy'
-import { loadConfig, selectScrcpyFolder, getScrcpyPath, isConfigured, getAutoConnectEnabled, setAutoConnectEnabled, getAutoConnectOptions, setAutoConnectOptions } from './config'
+import { startScrcpy, stopScrcpy, getScrcpyStatus, ScrcpyOptions, DEFAULT_OPTIONS, getLastActiveSession } from './scrcpy'
+import { loadConfig, selectScrcpyFolder, getScrcpyPath, isConfigured, getAutoConnectEnabled, setAutoConnectEnabled, getAutoConnectOptions, setAutoConnectOptions, getAutoStartEnabled, setAutoStartEnabled, getAutoReconnectEnabled, setAutoReconnectEnabled } from './config'
 import { getDeviceMonitor } from './device-monitor'
 
 const isDev = !app.isPackaged
@@ -20,34 +20,81 @@ app.whenReady().then(() => {
     const monitor = getDeviceMonitor()
     monitor.start()
 
+    // Debounce mechanism for auto-reconnect
+    let reconnectTimeout: NodeJS.Timeout | null = null
+
     // Listen for new device connections
     monitor.on('device-connected', async (device: Device) => {
         console.log('Device connected:', device)
 
-        // Check if auto-connect is enabled
-        if (getAutoConnectEnabled() && isConfigured()) {
-            console.log('Auto-connect is enabled, launching scrcpy...')
+        // PRIORITY 1: Check if auto-reconnect should trigger (for existing sessions)
+        const lastSession = getLastActiveSession()
+        console.log('[AUTO-RECONNECT] Device connected. Checking for auto-reconnect...')
+        console.log('[AUTO-RECONNECT] Last session:', lastSession)
+        console.log('[AUTO-RECONNECT] Auto-reconnect enabled:', getAutoReconnectEnabled())
+        console.log('[AUTO-RECONNECT] Is configured:', isConfigured())
 
-            // Get saved options or use defaults
-            const options = getAutoConnectOptions() || DEFAULT_OPTIONS
+        if (lastSession && getAutoReconnectEnabled() && isConfigured() && lastSession.deviceId === device.id) {
+            // Same device reconnected - use auto-reconnect
+            console.log('[AUTO-RECONNECT] MATCH! Triggering auto-reconnect for device:', device.id)
 
-            // Start scrcpy
-            const result = await startScrcpy(device.id, options)
-
-            // Notify renderer
-            const win = getMainWindow()
-            if (win) {
-                win.webContents.send('auto-connect-triggered', {
-                    device,
-                    success: result.success,
-                    message: result.message
-                })
+            // Clear any pending reconnection attempt (debounce)
+            if (reconnectTimeout) {
+                console.log('[AUTO-RECONNECT] Canceling previous reconnection attempt (device reconnected again)')
+                clearTimeout(reconnectTimeout)
+                reconnectTimeout = null
             }
 
-            if (result.success) {
-                console.log('Auto-connect successful:', result.message)
-            } else {
-                console.error('Auto-connect failed:', result.message)
+
+            // Wait longer for device to stabilize after USB mode change
+            reconnectTimeout = setTimeout(async () => {
+                console.log('[AUTO-RECONNECT] Starting reconnection after 2 second delay...')
+                reconnectTimeout = null
+                const result = await startScrcpy(device.id, lastSession.options)
+
+                // Notify renderer
+                const win = getMainWindow()
+                if (win) {
+                    win.webContents.send('auto-reconnect-triggered', {
+                        device,
+                        success: result.success,
+                        message: result.message
+                    })
+                }
+
+                if (result.success) {
+                    console.log('[AUTO-RECONNECT] Reconnection successful:', result.message)
+                } else {
+                    console.error('[AUTO-RECONNECT] Reconnection failed:', result.message)
+                }
+            }, 2000) // 2 second delay for device stabilization
+        } else {
+            // PRIORITY 2: No previous session or different device - check auto-connect
+            console.log('[AUTO-RECONNECT] Not a reconnect scenario - checking auto-connect')
+            if (getAutoConnectEnabled() && isConfigured()) {
+                console.log('Auto-connect is enabled, launching scrcpy...')
+
+                // Get saved options or use defaults
+                const options = getAutoConnectOptions() || DEFAULT_OPTIONS
+
+                // Start scrcpy
+                const result = await startScrcpy(device.id, options)
+
+                // Notify renderer
+                const win = getMainWindow()
+                if (win) {
+                    win.webContents.send('auto-connect-triggered', {
+                        device,
+                        success: result.success,
+                        message: result.message
+                    })
+                }
+
+                if (result.success) {
+                    console.log('Auto-connect successful:', result.message)
+                } else {
+                    console.error('Auto-connect failed:', result.message)
+                }
             }
         }
     })
@@ -160,6 +207,24 @@ app.whenReady().then(() => {
 
     ipcMain.handle('set-auto-connect-options', (_, options: ScrcpyOptions): void => {
         setAutoConnectOptions(options)
+    })
+
+    // IPC Handlers - Auto-Start
+    ipcMain.handle('get-auto-start-enabled', (): boolean => {
+        return getAutoStartEnabled()
+    })
+
+    ipcMain.handle('set-auto-start-enabled', (_, enabled: boolean): void => {
+        setAutoStartEnabled(enabled)
+    })
+
+    // IPC Handlers - Auto-Reconnect
+    ipcMain.handle('get-auto-reconnect-enabled', (): boolean => {
+        return getAutoReconnectEnabled()
+    })
+
+    ipcMain.handle('set-auto-reconnect-enabled', (_, enabled: boolean): void => {
+        setAutoReconnectEnabled(enabled)
     })
 
     app.on('activate', () => {

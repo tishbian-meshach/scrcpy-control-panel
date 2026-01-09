@@ -58,6 +58,14 @@ interface Window {
         getAutoConnectOptions: () => Promise<any | null>
         setAutoConnectOptions: (options: any) => Promise<void>
 
+        // Auto-start
+        getAutoStartEnabled: () => Promise<boolean>
+        setAutoStartEnabled: (enabled: boolean) => Promise<void>
+
+        // Auto-reconnect
+        getAutoReconnectEnabled: () => Promise<boolean>
+        setAutoReconnectEnabled: (enabled: boolean) => Promise<void>
+
         // Event listeners
         onRefreshDevices: (callback: () => void) => void
         onAutoConnectTriggered: (callback: (data: { device: any; success: boolean; message: string }) => void) => void

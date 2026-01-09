@@ -38,6 +38,8 @@ function Settings({
     const [optimizing, setOptimizing] = useState(false)
     const [autoConnectEnabled, setAutoConnectEnabledState] = useState(false)
     const [autoConnectMessage, setAutoConnectMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+    const [autoStartEnabled, setAutoStartEnabledState] = useState(false)
+    const [autoReconnectEnabled, setAutoReconnectEnabledState] = useState(true)
 
     const updateOption = <K extends keyof ScrcpyOptions>(key: K, value: ScrcpyOptions[K]) => {
         setOptions(prev => ({ ...prev, [key]: value }))
@@ -114,13 +116,19 @@ function Settings({
         setTimeout(() => setFolderMessage(null), 5000)
     }
 
-    // Load auto-connect status on mount
+    // Load auto-connect and auto-start status on mount
     useEffect(() => {
-        const loadAutoConnectStatus = async () => {
-            const enabled = await window.electronAPI.getAutoConnectEnabled()
-            setAutoConnectEnabledState(enabled)
+        const loadSettings = async () => {
+            const [autoConnect, autoStart, autoReconnect] = await Promise.all([
+                window.electronAPI.getAutoConnectEnabled(),
+                window.electronAPI.getAutoStartEnabled(),
+                window.electronAPI.getAutoReconnectEnabled()
+            ])
+            setAutoConnectEnabledState(autoConnect)
+            setAutoStartEnabledState(autoStart)
+            setAutoReconnectEnabledState(autoReconnect)
         }
-        loadAutoConnectStatus()
+        loadSettings()
     }, [])
 
     const handleAutoConnectToggle = async (enabled: boolean) => {
@@ -138,6 +146,26 @@ function Settings({
         setAutoConnectMessage({
             type: 'success',
             text: 'Current settings saved for auto-connect'
+        })
+        setTimeout(() => setAutoConnectMessage(null), 3000)
+    }
+
+    const handleAutoStartToggle = async (enabled: boolean) => {
+        await window.electronAPI.setAutoStartEnabled(enabled)
+        setAutoStartEnabledState(enabled)
+        setAutoConnectMessage({
+            type: 'success',
+            text: enabled ? 'Auto-start enabled - App will launch on Windows startup' : 'Auto-start disabled'
+        })
+        setTimeout(() => setAutoConnectMessage(null), 3000)
+    }
+
+    const handleAutoReconnectToggle = async (enabled: boolean) => {
+        await window.electronAPI.setAutoReconnectEnabled(enabled)
+        setAutoReconnectEnabledState(enabled)
+        setAutoConnectMessage({
+            type: 'success',
+            text: enabled ? 'Auto-reconnect enabled - Session will resume after USB mode changes' : 'Auto-reconnect disabled'
         })
         setTimeout(() => setAutoConnectMessage(null), 3000)
     }
@@ -221,6 +249,20 @@ function Settings({
                         description="Automatically start scrcpy when USB device is plugged in"
                         enabled={autoConnectEnabled}
                         onChange={handleAutoConnectToggle}
+                    />
+
+                    <OptionToggle
+                        label="Start with Windows"
+                        description="Launch app automatically when Windows starts"
+                        enabled={autoStartEnabled}
+                        onChange={handleAutoStartToggle}
+                    />
+
+                    <OptionToggle
+                        label="Auto-Reconnect on USB Mode Change"
+                        description="Automatically restart session when USB mode changes"
+                        enabled={autoReconnectEnabled}
+                        onChange={handleAutoReconnectToggle}
                     />
 
                     {autoConnectEnabled && (

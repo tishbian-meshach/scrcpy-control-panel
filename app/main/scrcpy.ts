@@ -63,6 +63,9 @@ export const DEFAULT_OPTIONS: ScrcpyOptions = {
 }
 
 let scrcpyProcess: ChildProcess | null = null
+let lastActiveDeviceId: string | null = null
+let lastActiveOptions: ScrcpyOptions | null = null
+let userInitiatedStop: boolean = false
 
 function getScrcpyPath(): string | null {
     // First try the configured path
@@ -185,13 +188,30 @@ export async function startScrcpy(
 
         scrcpyProcess.on('error', (error) => {
             console.error('Scrcpy error:', error)
+            console.log('[AUTO-RECONNECT] Scrcpy error occurred. userInitiatedStop:', userInitiatedStop)
             scrcpyProcess = null
+            if (userInitiatedStop) {
+                console.log('[AUTO-RECONNECT] Clearing session (user initiated)')
+                lastActiveDeviceId = null
+                lastActiveOptions = null
+            } else {
+                console.log('[AUTO-RECONNECT] Preserving session for reconnect. Device:', lastActiveDeviceId)
+            }
             updateTrayMenu()
         })
 
         scrcpyProcess.on('exit', (code) => {
             console.log('Scrcpy exited with code:', code)
+            console.log('[AUTO-RECONNECT] Exit event. userInitiatedStop:', userInitiatedStop)
             scrcpyProcess = null
+            if (userInitiatedStop) {
+                console.log('[AUTO-RECONNECT] Clearing session (user initiated)')
+                lastActiveDeviceId = null
+                lastActiveOptions = null
+                userInitiatedStop = false
+            } else {
+                console.log('[AUTO-RECONNECT] Preserving session for reconnect. Device:', lastActiveDeviceId)
+            }
             updateTrayMenu()
         })
 
@@ -207,6 +227,11 @@ export async function startScrcpy(
         await new Promise(resolve => setTimeout(resolve, 500))
 
         if (scrcpyProcess && !scrcpyProcess.killed) {
+            // Save session info for auto-reconnect
+            lastActiveDeviceId = deviceId
+            lastActiveOptions = options
+            userInitiatedStop = false
+            console.log('[AUTO-RECONNECT] Session started. Device:', deviceId, 'Options saved for auto-reconnect')
             updateTrayMenu()
             return { success: true, message: 'Scrcpy started successfully' }
         }
@@ -218,9 +243,11 @@ export async function startScrcpy(
     }
 }
 
-export async function stopScrcpy(): Promise<{ success: boolean }> {
+export async function stopScrcpy(userInitiated: boolean = true): Promise<{ success: boolean }> {
+    console.log('[AUTO-RECONNECT] stopScrcpy called. userInitiated:', userInitiated)
     if (scrcpyProcess) {
         try {
+            userInitiatedStop = userInitiated
             scrcpyProcess.kill('SIGTERM')
 
             // Force kill after timeout
@@ -247,6 +274,19 @@ export function getScrcpyStatus(): { running: boolean } {
 
 export function getScrcpyProcess(): ChildProcess | null {
     return scrcpyProcess
+}
+
+export function getLastActiveSession(): { deviceId: string; options: ScrcpyOptions } | null {
+    if (lastActiveDeviceId && lastActiveOptions) {
+        return { deviceId: lastActiveDeviceId, options: lastActiveOptions }
+    }
+    return null
+}
+
+export function clearLastActiveSession(): void {
+    lastActiveDeviceId = null
+    lastActiveOptions = null
+    userInitiatedStop = false
 }
 
 // Preset configurations

@@ -104,6 +104,18 @@ const electronAPI = {
     setAutoConnectOptions: (options: ScrcpyOptions): Promise<void> =>
         ipcRenderer.invoke('set-auto-connect-options', options),
 
+    // Auto-start
+    getAutoStartEnabled: (): Promise<boolean> =>
+        ipcRenderer.invoke('get-auto-start-enabled'),
+    setAutoStartEnabled: (enabled: boolean): Promise<void> =>
+        ipcRenderer.invoke('set-auto-start-enabled', enabled),
+
+    // Auto-reconnect
+    getAutoReconnectEnabled: (): Promise<boolean> =>
+        ipcRenderer.invoke('get-auto-reconnect-enabled'),
+    setAutoReconnectEnabled: (enabled: boolean): Promise<void> =>
+        ipcRenderer.invoke('set-auto-reconnect-enabled', enabled),
+
     // Event listeners
     onRefreshDevices: (callback: () => void) => {
         ipcRenderer.on('refresh-devices', () => callback())
